@@ -183,13 +183,59 @@ function MethodNote({sp,prov}){
         <div>Operating weeks per year: <strong style={{color:C.ks}}>50</strong></div>
         <div>Provider count: <strong style={{color:C.ks}}>{prov}</strong></div>
         <div>No-show reduction assumption: <strong style={{color:C.ks}}>50%</strong></div>
-        <div>Referral recovery rate: <strong style={{color:C.ks}}>40%</strong></div>
-        <div>Platform pricing: <strong style={{color:C.ks}}>$900/provider/mo</strong></div>
-        <div>Annual compounding improvement: <strong style={{color:C.ks}}>15%</strong></div>
+        <div>Referral recovery rate: <strong style={{color:C.ks}}>25%</strong></div>
+        <div>Downstream attribution factor: <strong style={{color:C.ks}}>35%</strong></div>
+        <div>Platform pricing: <strong style={{color:C.ks}}>18% of projected impact (floor $150K)</strong></div>
+        <div>Annual compounding improvement: <strong style={{color:C.ks}}>12%</strong></div>
       </div>
       <div style={{marginTop:12,fontSize:10,color:C.kg}}>Revenue per visit reflects blended reimbursement across payer mix. Downstream multiplier accounts for referrals, procedures, imaging, and ancillary services generated per initial visit. All projections are illustrative and should be validated against your organization's actual financial data.</div>
     </div>}
   </div>;
+}
+
+/* PDF Export — generates a clean summary and triggers print dialog */
+function exportPDF({title,subtitle,date,metrics,narrative,breakdown,methodology}){
+  const w=window.open("","_blank","width=800,height=1100");
+  if(!w)return alert("Please allow popups to export PDF.");
+  w.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;color:#0F172A;padding:56px 64px;max-width:800px;margin:0 auto;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.logo span{font-size:12px;font-weight:800;letter-spacing:.14em}
+.sub{font-size:9px;color:#94A3B8}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:20px;border-bottom:2px solid #E2E8F0;margin-bottom:32px}
+.date{font-size:9px;color:#94A3B8;text-align:right}
+h1{font-size:22px;font-weight:400;margin-bottom:8px;letter-spacing:-.02em}
+h2{font-size:10px;font-weight:700;letter-spacing:.1em;color:#94A3B8;margin-bottom:16px;text-transform:uppercase}
+.metrics{display:flex;gap:32px;margin-bottom:36px;padding:24px 0;border-bottom:1px solid #E2E8F0}
+.metric .val{font-size:28px;font-weight:500;font-family:'Inter',sans-serif}
+.metric .lbl{font-size:8px;font-weight:700;letter-spacing:.08em;color:#94A3B8;margin-top:4px;text-transform:uppercase}
+.teal{color:#0D9488}.red{color:#DC2626}.amber{color:#D97706}.sage{color:#16A34A}
+.narrative{font-size:13px;line-height:1.85;color:#334155;margin-bottom:32px;padding:20px 24px;background:#F8FAFC;border-radius:8px;border:1px solid #E2E8F0}
+.breakdown{margin-bottom:32px}
+.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #F1F5F9;font-size:12px}
+.row .rlbl{color:#64748B}.row .rval{font-weight:600}
+.method{font-size:9px;color:#94A3B8;line-height:1.7;margin-top:32px;padding-top:16px;border-top:1px solid #E2E8F0}
+.footer{margin-top:40px;padding-top:16px;border-top:1px solid #E2E8F0;display:flex;justify-content:space-between;font-size:8px;color:#94A3B8;letter-spacing:.08em;font-weight:700}
+@media print{body{padding:40px 48px}}
+</style></head><body>
+<div class="hdr">
+  <div><div class="logo"><svg width="18" height="18" viewBox="0 0 20 20"><rect width="20" height="20" rx="5" fill="#1E293B"/><path d="M5 8L10 5L15 8L10 11Z" fill="none" stroke="#0D9488" stroke-width="1.3" stroke-linejoin="round"/></svg><span>TETHER</span></div>
+  <div class="sub">Access Intelligence · Value Analysis</div></div>
+  <div class="date">Prepared for: [Organization]<br>${date}</div>
+</div>
+<h1>${title}</h1>
+<p style="font-size:13px;color:#64748B;margin-bottom:28px">${subtitle}</p>
+<div class="metrics">${metrics.map(m=>`<div class="metric"><div class="val ${m.cls||'teal'}">${m.v}</div><div class="lbl">${m.l}</div></div>`).join("")}</div>
+${narrative?`<h2>Executive Summary</h2><div class="narrative">${narrative}</div>`:""}
+${breakdown?`<h2>Value Breakdown</h2><div class="breakdown">${breakdown.map(b=>`<div class="row"><span class="rlbl">${b.l}</span><span class="rval">${b.v}</span></div>`).join("")}</div>`:""}
+${methodology?`<div class="method"><strong>Methodology:</strong> ${methodology}</div>`:""}
+<div class="footer"><span>BUILT BY BRAD LARMIE</span><span>MONOLITH GREY · VALUE ENGINEERING</span></div>
+</body></html>`);
+  w.document.close();
+  setTimeout(()=>{w.print();},400);
 }
 
 /* Cross-navigation — keeps them in the tool */
@@ -233,12 +279,17 @@ function ProspectPath({onHome}){
   const newFillRate=Math.min(fillRate+targetLift,98);const newNoShow=Math.max(noShow-Math.round(noShow*0.50),2);
   const newFilledSlots=Math.round(totalSlots*(newFillRate/100));const newNoShowSlots=Math.round(newFilledSlots*(newNoShow/100));
   const newActualVisits=newFilledSlots-newNoShowSlots;const addlVisits=newActualVisits-actualVisits;
-  const addlDirectRev=addlVisits*sp.revPerVisit;const addlDownstream=addlVisits*sp.revPerVisit*(sp.downstream-1);
-  const totalAddlValue=addlDirectRev+addlDownstream;const leakRecovery=leakedReferrals*0.40*sp.revPerVisit*sp.downstream;
-  const totalTetherImpact=totalAddlValue+leakRecovery;const tetherCost=Math.max(prov*900*12,120000);
+  const addlDirectRev=addlVisits*sp.revPerVisit;
+  const downstreamAttr=0.35;/* only 35% of downstream is attributable to access improvements */
+  const addlDownstream=Math.round(addlVisits*sp.revPerVisit*(sp.downstream-1)*downstreamAttr);
+  const totalAddlValue=addlDirectRev+addlDownstream;
+  const leakRecovery=Math.round(leakedReferrals*0.25*sp.revPerVisit*sp.downstream*downstreamAttr);/* 25% recapture, attributed */
+  const totalTetherImpact=totalAddlValue+leakRecovery;
+  /* Value-based pricing: 18% of projected impact, floor $150K */
+  const tetherCost=Math.max(Math.round(totalTetherImpact*0.18),150000);
   const netImpact=totalTetherImpact-tetherCost;const roiPct=((totalTetherImpact-tetherCost)/tetherCost)*100;
   const paybackMo=Math.max(1,Math.round((tetherCost/totalTetherImpact)*12));
-  const yr=[1,2,3].map(y=>({y,impact:totalTetherImpact*(1+(y-1)*0.15),cost:tetherCost*(y===1?1:.85)}));
+  const yr=[1,2,3].map(y=>({y,impact:totalTetherImpact*(1+(y-1)*0.12),cost:tetherCost*(y===1?1:.90)}));
   const threeYrNet=yr.reduce((a,b)=>a+(b.impact-b.cost),0);
   const pctUsed=((actualVisits/totalSlots)*100);
 
@@ -558,7 +609,15 @@ function ProspectPath({onHome}){
           </Fade>
 
           <Fade delay={showDetail?300:1100} show={r}><div style={{textAlign:"center",marginTop:36}}>
-            <div style={{display:"flex",gap:12,justifyContent:"center"}}><Btn>Schedule an Access Review</Btn><Btn v="accent">Export Full Summary</Btn></div>
+            <div style={{display:"flex",gap:12,justifyContent:"center"}}><Btn>Schedule an Access Review</Btn><Btn v="accent" onClick={()=>exportPDF({
+              title:`${sp.label} · ${prov} Providers — Access Value Analysis`,
+              subtitle:`Projected Year-1 impact based on current utilization and Tether improvement modeling.`,
+              date:new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}),
+              metrics:[{v:fmt(netImpact),l:"Net Year-1 Impact",cls:"teal"},{v:`${Math.round(roiPct)}%`,l:"ROI",cls:"amber"},{v:`${paybackMo} mo`,l:"Payback",cls:"sage"},{v:`+${fmtK(addlVisits)}`,l:"Patients Added / Year",cls:"teal"}],
+              narrative:`This ${sp.label.toLowerCase()} network of ${prov} providers currently converts ${fillRate}% of available capacity into patient visits, leaving ${fmt(totalUnrealized)} in total unrealized value annually. By improving fill rate by ${targetLift} points and reducing no-shows by 50%, Tether would add ${fmtK(addlVisits)} patient visits — generating ${fmt(totalTetherImpact)} in attributable value against a ${fmt(tetherCost)} investment. Payback in ${paybackMo} months.`,
+              breakdown:[{l:"Additional visit revenue",v:fmt(addlDirectRev)},{l:"Downstream value (35% attribution)",v:fmt(addlDownstream)},{l:"Referral leakage recovery",v:fmt(leakRecovery)},{l:"Total gross impact",v:fmt(totalTetherImpact)},{l:"Platform investment",v:`(${fmt(tetherCost)})`},{l:"Net Year-1 impact",v:fmt(netImpact)}],
+              methodology:`Revenue per visit: ${fmt(sp.revPerVisit)} (MGMA 2024). Downstream multiplier: ${sp.downstream}× (CMS claims). 35% downstream attribution factor. 25% referral recapture rate. Value-based pricing: 18% of projected impact. 50-week operating year. All projections illustrative.`
+            })}>Export Full Summary</Btn></div>
             <div style={{fontSize:11,color:C.kf,marginTop:14}}>30-minute consultation with a Tether access strategist</div>
           </div></Fade>
           <Fade delay={showDetail?400:1200} show={r}><MethodNote sp={sp} prov={prov}/></Fade>
@@ -588,9 +647,12 @@ function CustomerPath({onHome}){
   const bLeaked=Math.round(bActual*0.35*(bLeak/100));
   const cFilled=Math.round(totalSlots*(cFill/100));const cNS=Math.round(cFilled*(cNoShow/100));const cActual=cFilled-cNS;
   const cLeaked=Math.round(cActual*0.35*(cLeak/100));
-  const addlVisits=cActual-bActual;const addlRev=addlVisits*rpv;const addlDownstream=addlVisits*rpv*(sp.downstream-1);
-  const leakRecov=Math.max(bLeaked-cLeaked,0)*rpv*sp.downstream;const totalValue=addlRev+addlDownstream+leakRecov;
-  const tetherCost=Math.max(bProv*900*12,120000);const achievedROI=((totalValue-tetherCost)/tetherCost)*100;
+  const addlVisits=cActual-bActual;const addlRev=addlVisits*rpv;
+  const downstreamAttr=0.35;
+  const addlDownstream=Math.round(addlVisits*rpv*(sp.downstream-1)*downstreamAttr);
+  const leakRecov=Math.round(Math.max(bLeaked-cLeaked,0)*rpv*sp.downstream*downstreamAttr);
+  const totalValue=addlRev+addlDownstream+leakRecov;
+  const tetherCost=Math.max(Math.round(totalValue*0.18),150000);const achievedROI=((totalValue-tetherCost)/tetherCost)*100;
   const perDollar=totalValue/tetherCost;const perProvPerMonth=Math.round(totalValue/bProv/12);
   const toggleExpSpec=(sk)=>setExpSpecs(p=>p.includes(sk)?p.filter(x=>x!==sk):[...p,sk]);
   const expSlots=expProv*sp.slotsPerDay*daysPerWeek*weeksPerYear;const expLiftPts=cFill-bFill;
@@ -600,8 +662,9 @@ function CustomerPath({onHome}){
   const expAvgRev=expSpecs.length?expSpecs.reduce((s,k)=>s+(SPECS[k]?.revPerVisit||285),0)/expSpecs.length:rpv;
   const expAvgDown=expSpecs.length?expSpecs.reduce((s,k)=>s+(SPECS[k]?.downstream||2),0)/expSpecs.length:sp.downstream;
   const expBaseActual=Math.round(expSlots*(bFill/100)*(1-bNoShow/100));
-  const expAddlVisits=expActual-expBaseActual;const expTotalImpact=expAddlVisits*expAvgRev+expAddlVisits*expAvgRev*(expAvgDown-1);
-  const expCost=Math.max(expProv*850*12,120000);const expROI=((expTotalImpact-expCost)/expCost)*100;
+  const expAddlVisits=expActual-expBaseActual;
+  const expTotalImpact=Math.round(expAddlVisits*expAvgRev+expAddlVisits*expAvgRev*(expAvgDown-1)*downstreamAttr);
+  const expCost=Math.max(Math.round(expTotalImpact*0.18),150000);const expROI=((expTotalImpact-expCost)/expCost)*100;
 
   const metrics=[
     {label:"Fill Rate",b:bFill,a:cFill,setB:setBFill,setA:setCFill,minB:40,maxB:98,minA:bFill,maxA:98,u:"%",good:"up"},
@@ -865,7 +928,15 @@ function CustomerPath({onHome}){
             </div>
           </Fade>
           <Fade delay={showExpDetail?300:550} show={r}><div style={{textAlign:"center",marginTop:36}}>
-            <div style={{display:"flex",gap:12,justifyContent:"center"}}><Btn>Download Board Summary</Btn><Btn v="accent">Share with Leadership</Btn></div>
+            <div style={{display:"flex",gap:12,justifyContent:"center"}}><Btn onClick={()=>exportPDF({
+              title:`${sp.label} · ${bProv} Providers — Value Realization Report`,
+              subtitle:`${monthsLive} months live. Achieved outcomes and expansion projection.`,
+              date:new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}),
+              metrics:[{v:fmt(totalValue),l:"Total Value Delivered",cls:"teal"},{v:`${Math.round(achievedROI)}%`,l:"Achieved ROI",cls:"amber"},{v:`$${perDollar.toFixed(1)}`,l:"Per $1 Invested",cls:"sage"},{v:`+${fmtK(addlVisits)}`,l:"Patients Added",cls:"teal"}],
+              narrative:`Over ${monthsLive} months, Tether improved ${sp.label.toLowerCase()} fill rate from ${bFill}% to ${cFill}% and reduced no-shows from ${bNoShow}% to ${cNoShow}%, adding ${fmtK(addlVisits)} patient visits annually across ${bProv} providers. Total attributable economic impact: ${fmt(totalValue)} per year — a ${Math.round(achievedROI)}% return on ${fmt(tetherCost)}. Every dollar returned $${perDollar.toFixed(1)}.`,
+              breakdown:[{l:"Additional visit revenue",v:fmt(addlRev)},{l:"Downstream value (35% attribution)",v:fmt(addlDownstream)},{l:"Referral recapture",v:fmt(leakRecov)},{l:"Total achieved value",v:fmt(totalValue)},{l:"Platform investment",v:`(${fmt(tetherCost)})`},{l:"Net value",v:fmt(totalValue-tetherCost)}],
+              methodology:`Revenue per visit: ${fmt(rpv)}. Downstream multiplier: ${sp.downstream}×. 35% downstream attribution factor. Value-based pricing: 18% of achieved impact.`
+            })}>Download Board Summary</Btn><Btn v="accent">Share with Leadership</Btn></div>
             <div style={{fontSize:11,color:C.kf,marginTop:14}}>PDF with all metrics, comparisons, and expansion projections</div>
           </div></Fade>
           <Fade delay={showExpDetail?400:650} show={r}><MethodNote sp={sp} prov={bProv}/></Fade>
