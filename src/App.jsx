@@ -1095,8 +1095,6 @@ function CaseStudyPath({onHome}){
         <CrossNav current="casestudy" onNav={n=>{onHome();setTimeout(()=>document.querySelector(`[data-path="${n}"]`)?.click(),100)}}/>
       </div>
     </div>);
-      </div>
-    </div>);
 }
 
 
