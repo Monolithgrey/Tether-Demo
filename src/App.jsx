@@ -238,49 +238,277 @@ function MethodNote({sp,prov}){
   </div>;
 }
 
-/* PDF Export — generates a clean summary and triggers print dialog */
-function exportPDF({title,subtitle,date,metrics,narrative,breakdown,methodology}){
-  const w=window.open("","_blank","width=800,height=1100");
-  if(!w)return alert("Please allow popups to export PDF.");
-  w.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',sans-serif;color:#0F172A;padding:56px 64px;max-width:800px;margin:0 auto;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.logo{display:flex;align-items:center;gap:10px;margin-bottom:4px}
-.logo span{font-size:12px;font-weight:800;letter-spacing:.14em}
-.sub{font-size:9px;color:#94A3B8}
-.hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:20px;border-bottom:2px solid #E2E8F0;margin-bottom:32px}
-.date{font-size:9px;color:#94A3B8;text-align:right}
-h1{font-size:22px;font-weight:400;margin-bottom:8px;letter-spacing:-.02em}
-h2{font-size:10px;font-weight:700;letter-spacing:.1em;color:#94A3B8;margin-bottom:16px;text-transform:uppercase}
-.metrics{display:flex;gap:32px;margin-bottom:36px;padding:24px 0;border-bottom:1px solid #E2E8F0}
-.metric .val{font-size:28px;font-weight:500;font-family:'Inter',sans-serif}
-.metric .lbl{font-size:8px;font-weight:700;letter-spacing:.08em;color:#94A3B8;margin-top:4px;text-transform:uppercase}
-.teal{color:#0D9488}.red{color:#DC2626}.amber{color:#D97706}.sage{color:#16A34A}
-.narrative{font-size:13px;line-height:1.85;color:#334155;margin-bottom:32px;padding:20px 24px;background:#F8FAFC;border-radius:8px;border:1px solid #E2E8F0}
-.breakdown{margin-bottom:32px}
-.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #F1F5F9;font-size:12px}
-.row .rlbl{color:#64748B}.row .rval{font-weight:600}
-.method{font-size:9px;color:#94A3B8;line-height:1.7;margin-top:32px;padding-top:16px;border-top:1px solid #E2E8F0}
-.footer{margin-top:40px;padding-top:16px;border-top:1px solid #E2E8F0;display:flex;justify-content:space-between;font-size:8px;color:#94A3B8;letter-spacing:.08em;font-weight:700}
-@media print{body{padding:40px 48px}}
-</style></head><body>
-<div class="hdr">
-  <div><div class="logo"><svg width="18" height="18" viewBox="0 0 20 20"><rect width="20" height="20" rx="5" fill="#1E293B"/><path d="M5 8L10 5L15 8L10 11Z" fill="none" stroke="#0D9488" stroke-width="1.3" stroke-linejoin="round"/></svg><span>TETHER</span></div>
-  <div class="sub">Access Intelligence · Value Analysis</div></div>
-  <div class="date">Prepared for: [Organization]<br>${date}</div>
-</div>
-<h1>${title}</h1>
-<p style="font-size:13px;color:#64748B;margin-bottom:28px">${subtitle}</p>
-<div class="metrics">${metrics.map(m=>`<div class="metric"><div class="val ${m.cls||'teal'}">${m.v}</div><div class="lbl">${m.l}</div></div>`).join("")}</div>
-${narrative?`<h2>Executive Summary</h2><div class="narrative">${narrative}</div>`:""}
-${breakdown?`<h2>Value Breakdown</h2><div class="breakdown">${breakdown.map(b=>`<div class="row"><span class="rlbl">${b.l}</span><span class="rval">${b.v}</span></div>`).join("")}</div>`:""}
-${methodology?`<div class="method"><strong>Methodology:</strong> ${methodology}</div>`:""}
-<div class="footer"><span>BUILT BY BRAD LARMIE</span><span>MONOLITH GREY · VALUE ENGINEERING</span></div>
-</body></html>`);
+/* ═══ PREMIUM PDF EXPORT — 3-page board-ready document ═══ */
+function exportPDF(d){
+  const w=window.open("","_blank","width=850,height=1100");
+  if(!w)return alert("Please allow popups to export.");
+  const org=d.orgName||d.specLabel||"Organization";
+  const F=n=>{if(!n&&n!==0)return"—";if(Math.abs(n)>=1e6)return"$"+(n/1e6).toFixed(1)+"M";if(Math.abs(n)>=1e3)return"$"+Math.round(n/1e3).toLocaleString()+"K";return"$"+Math.round(n).toLocaleString()};
+  const FK=n=>n>=1000?(n/1000).toFixed(1)+"K":String(n);
+  const date=d.date||new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const docId="TVA-"+Date.now().toString(36).toUpperCase().slice(-6);
+  const m=d.metrics||[];const bd=d.breakdown||[];
+  const html=[];
+  html.push('<!DOCTYPE html><html><head><title>'+d.title+'</title>');
+  html.push('<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">');
+  html.push('<style>');
+  html.push('@page{size:letter;margin:0}');
+  html.push('*{margin:0;padding:0;box-sizing:border-box}');
+  html.push("body{font-family:'Plus Jakarta Sans','Helvetica Neue',sans-serif;color:#0F172A;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}");
+  html.push(":root{--t:#0D9488;--td:#115E59;--tl:#F0FDFA;--tb:#99F6E4;--a:#D97706;--al:#FFFBEB;--r:#DC2626;--rl:#FEF2F2;--s:#2563EB;--sl:#EFF6FF;--k:#0F172A;--km:#334155;--ks:#64748B;--kf:#94A3B8;--kg:#CBD5E1;--bl:#E2E8F0;--sa:#F8FAFC;--mn:'JetBrains Mono','SF Mono',monospace;--dp:'Instrument Serif',Georgia,serif}");
+  // Page structure
+  html.push('.page{width:8.5in;min-height:11in;max-height:11in;overflow:hidden;position:relative;page-break-after:always;display:flex;flex-direction:column}');
+  html.push('.page:last-child{page-break-after:auto}');
+  // Header
+  html.push('.hdr{display:flex;justify-content:space-between;align-items:center;padding:28px 52px;border-bottom:1px solid var(--bl)}');
+  html.push('.logo-g{display:flex;align-items:center;gap:8px}');
+  html.push('.logo-t{font-size:11px;font-weight:800;letter-spacing:.14em}');
+  html.push('.logo-s{font-size:8px;color:var(--kf);letter-spacing:.04em;margin-left:10px;padding-left:10px;border-left:1px solid var(--bl)}');
+  html.push('.hdr-r{font-size:8px;color:var(--kf);text-align:right;line-height:1.6}');
+  html.push('.hdr-r b{color:var(--ks);font-weight:600}');
+  // Confidential strip
+  html.push('.conf{background:var(--k);padding:5px 52px;display:flex;justify-content:space-between;align-items:center}');
+  html.push(".conf span{font-size:6.5px;font-weight:700;letter-spacing:.16em;color:var(--kf);text-transform:uppercase}");
+  html.push(".conf .did{color:var(--t);font-family:var(--mn)}");
+  // Footer
+  html.push('.ftr{padding:14px 52px;border-top:1px solid var(--bl);display:flex;justify-content:space-between;align-items:center;margin-top:auto}');
+  html.push('.ftr span{font-size:6.5px;font-weight:700;letter-spacing:.1em;color:var(--kg);text-transform:uppercase}');
+  html.push('.ftr .pn{font-family:var(--mn);color:var(--kf)}');
+  // Content area
+  html.push('.content{flex:1;padding:0 52px;overflow:hidden}');
+  // Section headers
+  html.push('.sh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px;padding-bottom:8px;border-bottom:2px solid var(--k)}');
+  html.push('.sh-t{font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--k);text-transform:uppercase}');
+  html.push('.sh-s{font-size:8px;color:var(--kf);font-family:var(--mn)}');
+  // Tables
+  html.push('table{width:100%;border-collapse:collapse}');
+  html.push('th{text-align:right;padding:8px 12px;font-size:8px;font-weight:700;letter-spacing:.08em;color:var(--kf);text-transform:uppercase;border-bottom:2px solid var(--k)}');
+  html.push('th:first-child{text-align:left}');
+  html.push("td{padding:9px 12px;border-bottom:1px solid var(--bl);font-size:11px}");
+  html.push("td:not(:first-child){text-align:right;font-family:var(--mn);font-weight:500}");
+  html.push('.rl{color:var(--km);font-weight:500}');
+  html.push('.rt td{border-top:2px solid var(--k);border-bottom:none;font-weight:700;background:var(--sa)}');
+  html.push('.pos{color:var(--t)}.neg{color:var(--r)}.amb{color:var(--a)}.blu{color:var(--s)}');
+  // Metric grid
+  html.push('.mg{display:grid;gap:0;border:1px solid var(--bl)}');
+  html.push('.mc{padding:22px 18px;border-right:1px solid var(--bl);text-align:left}');
+  html.push('.mc:last-child{border-right:none}');
+  html.push(".mc.pri{background:var(--k)}");
+  html.push(".mc.pri .mv{color:var(--tb);font-size:32px}");
+  html.push('.mc.pri .ml{color:var(--kf)}');
+  html.push(".mv{font-size:24px;font-weight:500;font-family:var(--mn);letter-spacing:-.03em;line-height:1;color:var(--k)}");
+  html.push('.ml{font-size:7px;font-weight:700;letter-spacing:.1em;color:var(--kf);text-transform:uppercase;margin-top:6px}');
+  html.push('.ms{font-size:8px;color:var(--kg);margin-top:3px;font-family:var(--mn)}');
+  // Narrative
+  html.push('.nar{padding:16px 20px;background:var(--sa);border:1px solid var(--bl);font-size:11px;color:var(--km);line-height:1.85}');
+  html.push('.nar b{color:var(--k)}.nar .hl{color:var(--t);font-weight:700;font-family:var(--mn);font-size:10px}.nar .hr{color:var(--r);font-weight:700;font-family:var(--mn);font-size:10px}');
+  // Before/After
+  html.push('.ba{display:grid;grid-template-columns:repeat(6,1fr);gap:0;border:1px solid var(--bl)}');
+  html.push('.bc{padding:12px 10px;text-align:center;border-right:1px solid var(--bl)}');
+  html.push('.bc:last-child{border-right:none}');
+  html.push(".bc.bh{background:var(--k);font-size:7px;font-weight:700;letter-spacing:.08em;color:var(--kf);text-transform:uppercase;padding:8px 10px}");
+  html.push('.bc.th{background:var(--td);color:#fff}');
+  html.push('.bv{font-size:16px;font-weight:600;font-family:var(--mn);line-height:1;margin-bottom:2px}');
+  html.push('.bl2{font-size:7px;font-weight:600;letter-spacing:.06em;color:var(--kf);text-transform:uppercase}');
+  html.push('.bd2{font-size:8px;font-weight:700;font-family:var(--mn);padding:2px 5px;border-radius:2px;display:inline-block;margin-top:3px}');
+  // 3-col mechanisms
+  html.push('.mechs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border:1px solid var(--bl)}');
+  html.push('.mech{padding:18px 16px;border-right:1px solid var(--bl);position:relative}');
+  html.push('.mech:last-child{border-right:none}');
+  html.push(".mech::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}");
+  html.push('.m1::before{background:var(--t)}.m2::before{background:var(--a)}.m3::before{background:var(--s)}');
+  html.push('.mech-l{font-size:7px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}');
+  html.push('.m1 .mech-l{color:var(--t)}.m2 .mech-l{color:var(--a)}.m3 .mech-l{color:var(--s)}');
+  html.push('.mech-v{font-size:20px;font-weight:500;font-family:var(--mn);letter-spacing:-.03em;line-height:1;color:var(--k);margin-bottom:3px}');
+  html.push('.mech-d{font-size:9px;color:var(--kf);line-height:1.55;margin-top:8px}');
+  html.push('.mbar{height:3px;background:var(--bl);border-radius:2px;margin-top:10px;overflow:hidden}');
+  html.push('.mbar-f{height:100%;border-radius:2px}');
+  // Investment compare
+  html.push('.ic{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--bl)}');
+  html.push('.ic-c{padding:20px}');
+  html.push('.ic-c:first-child{border-right:1px solid var(--bl);background:var(--rl)}');
+  html.push('.ic-c:last-child{background:var(--tl)}');
+  html.push('.ic-h{font-size:7px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}');
+  html.push('.ic-c:first-child .ic-h{color:var(--r)}.ic-c:last-child .ic-h{color:var(--t)}');
+  html.push('.ic-v{font-size:24px;font-weight:500;font-family:var(--mn);letter-spacing:-.03em;line-height:1;margin-bottom:3px}');
+  html.push('.ic-c:first-child .ic-v{color:var(--r)}.ic-c:last-child .ic-v{color:var(--t)}');
+  html.push('.ic-n{font-size:9px;color:var(--ks);margin-top:6px;line-height:1.5}');
+  // Method
+  html.push('.meth{padding:14px 18px;background:var(--sa);border:1px solid var(--bl);font-size:8px;color:var(--kf);line-height:1.8}');
+  html.push('.meth b{color:var(--ks);font-weight:600}');
+  html.push('.mg2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 20px;margin-top:8px;font-size:8px}');
+  html.push('.mg2 span:first-child{color:var(--kf)}.mg2 span:last-child{color:var(--ks);font-weight:600;font-family:var(--mn);text-align:right}');
+  html.push('.mi{display:flex;justify-content:space-between}');
+  // Spacer
+  html.push('.sp{height:16px}.sp2{height:24px}.sp3{height:32px}');
+  // Print
+  html.push("@media print{.page{page-break-after:always;min-height:100vh;max-height:none}.page:last-child{page-break-after:auto}}");
+  html.push('</style></head><body>');
+
+  // ─── HELPER: header/footer ───
+  function hdr(){return '<div class="hdr"><div style="display:flex;align-items:center"><div class="logo-g"><svg width="16" height="16" viewBox="0 0 20 20"><rect width="20" height="20" rx="5" fill="#0F172A"/><path d="M5 8L10 5L15 8L10 11Z" fill="none" stroke="#0D9488" stroke-width="1.3" stroke-linejoin="round"/><path d="M5 10.5L10 13.5L15 10.5" fill="none" stroke="#5EC4B6" stroke-width="1" stroke-linejoin="round" opacity=".4"/></svg><span class="logo-t">TETHER</span></div><span class="logo-s">Access Intelligence Platform</span></div><div class="hdr-r">Prepared for<br><b>'+org+'</b><br>'+date+'</div></div>';}
+  function ftr(n){return '<div class="ftr"><span>Tether Access Intelligence · Monolith Grey Value Engineering</span><span class="pn">'+n+'</span></div>';}
+
+  // ═══════════════════════════════════════════
+  // PAGE 1 — COVER + HERO METRICS
+  // ═══════════════════════════════════════════
+  html.push('<div class="page">');
+  html.push(hdr());
+  html.push('<div class="conf"><span>Confidential · For Internal Decision-Making Only</span><span class="did">'+docId+'</span></div>');
+  html.push('<div class="content">');
+  html.push('<div class="sp3"></div>');
+  // Title block
+  html.push('<div style="font-size:9px;font-weight:700;color:var(--kf);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px">Access Value Analysis</div>');
+  html.push('<div style="font-size:36px;font-weight:400;font-family:var(--dp);color:var(--k);line-height:1.1;letter-spacing:-.02em;margin-bottom:4px">'+org+'</div>');
+  html.push('<div style="font-size:14px;font-weight:400;font-family:var(--dp);font-style:italic;color:var(--ks);margin-bottom:40px">'+d.title+'</div>');
+  // Hero metrics
+  html.push('<div class="mg" style="grid-template-columns:1fr 1fr 1fr 1fr">');
+  m.forEach(function(x,i){
+    html.push('<div class="mc'+(i===0?' pri':'')+'"><div class="mv'+(i===1?' amb':'')+(i===2?' blu':'')+(i>0&&i!==1&&i!==2?' pos':'')+'">'+x.v+'</div><div class="ml">'+x.l+'</div></div>');
+  });
+  html.push('</div>');
+  html.push('<div class="sp2"></div>');
+  // Narrative
+  if(d.narrative){
+    html.push('<div class="nar">'+d.narrative+'</div>');
+  }
+  html.push('<div class="sp2"></div>');
+  // Value breakdown table
+  if(bd.length){
+    html.push('<div class="sh"><span class="sh-t">Value Breakdown</span></div>');
+    html.push('<table>');
+    bd.forEach(function(b,i){
+      var isTotal=b.l.toLowerCase().indexOf('total')>=0||b.l.toLowerCase().indexOf('net')>=0;
+      html.push('<tr class="'+(isTotal?'rt':'')+'"><td class="rl">'+b.l+'</td><td class="'+(isTotal?'pos':'')+'">'+b.v+'</td></tr>');
+    });
+    html.push('</table>');
+  }
+  html.push('</div>');
+  html.push(ftr('1 / 3'));
+  html.push('</div>');
+
+  // ═══════════════════════════════════════════
+  // PAGE 2 — BEFORE/AFTER + RECOVERY MECHANISMS
+  // ═══════════════════════════════════════════
+  html.push('<div class="page">');
+  html.push(hdr());
+  html.push('<div class="content">');
+  html.push('<div class="sp2"></div>');
+
+  // Before/After if we have the data
+  if(d.fillRate&&d.newFillRate){
+    html.push('<div class="sh"><span class="sh-t">Operational Improvement Model</span><span class="sh-s">'+d.fillRate+'% → '+d.newFillRate+'%</span></div>');
+    html.push('<div class="ba">');
+    html.push('<div class="bc bh" style="grid-column:span 3;text-align:left;color:#fff">Before Tether</div>');
+    html.push('<div class="bc bh th" style="grid-column:span 3;text-align:left">With Tether</div>');
+    html.push('<div class="bc"><div class="bv" style="color:var(--r)">'+d.fillRate+'%</div><div class="bl2">Fill Rate</div></div>');
+    html.push('<div class="bc"><div class="bv" style="color:var(--r)">'+(d.noShow||'—')+'%</div><div class="bl2">No-Shows</div></div>');
+    html.push('<div class="bc"><div class="bv" style="color:var(--r)">'+(d.leakPct||'—')+'%</div><div class="bl2">Leakage</div></div>');
+    html.push('<div class="bc" style="background:var(--tl)"><div class="bv" style="color:var(--t)">'+d.newFillRate+'%</div><div class="bl2">Fill Rate</div><div class="bd2" style="background:var(--tl);color:var(--t)">+'+(d.targetLift||'—')+'pts</div></div>');
+    html.push('<div class="bc" style="background:var(--tl)"><div class="bv" style="color:var(--t)">'+(d.newNoShow||'—')+'%</div><div class="bl2">No-Shows</div><div class="bd2" style="background:var(--tl);color:var(--t)">-'+((d.noShow||0)-(d.newNoShow||0))+'pts</div></div>');
+    html.push('<div class="bc" style="background:var(--tl)"><div class="bv" style="color:var(--t)">'+(d.newLeakPct||'—')+'%</div><div class="bl2">Leakage</div><div class="bd2" style="background:var(--tl);color:var(--t)">-'+((d.leakPct||0)-(d.newLeakPct||0))+'pts</div></div>');
+    html.push('</div>');
+    html.push('<div class="sp2"></div>');
+  }
+
+  // Recovery mechanisms
+  if(d.addlDirectRev){
+    var tot=d.totalImpact||1;
+    html.push('<div class="sh"><span class="sh-t">Value Recovery Mechanisms</span><span class="sh-s">'+FK(d.addlVisits||0)+' visits → '+F(tot)+'</span></div>');
+    html.push('<div class="mechs">');
+    html.push('<div class="mech m1"><div class="mech-l">Schedule Optimization</div><div class="mech-v">'+F(d.addlDirectRev)+'</div><div style="font-size:9px;color:var(--ks)">Direct visit revenue</div><div class="mech-d">Filling empty slots where demand existed but scheduling couldn\'t match patient to provider.</div><div class="mbar"><div class="mbar-f" style="width:'+Math.round(d.addlDirectRev/tot*100)+'%;background:var(--t)"></div></div></div>');
+    html.push('<div class="mech m2"><div class="mech-l">Downstream Value</div><div class="mech-v">'+F(d.addlDownstream)+'</div><div style="font-size:9px;color:var(--ks)">35% attribution factor</div><div class="mech-d">Referrals, procedures, imaging, and ancillary services generated per recovered visit.</div><div class="mbar"><div class="mbar-f" style="width:'+Math.round((d.addlDownstream||0)/tot*100)+'%;background:var(--a)"></div></div></div>');
+    html.push('<div class="mech m3"><div class="mech-l">Referral Recapture</div><div class="mech-v">'+F(d.leakRecovery)+'</div><div style="font-size:9px;color:var(--ks)">25% recapture rate</div><div class="mech-d">Closed-loop tracking ensures referrals don\'t leak to competitors.</div><div class="mbar"><div class="mbar-f" style="width:'+Math.round((d.leakRecovery||0)/tot*100)+'%;background:var(--s)"></div></div></div>');
+    html.push('</div>');
+    html.push('<div class="sp2"></div>');
+  }
+
+  // Investment comparison
+  if(d.tetherCost&&d.totalUnrealized){
+    html.push('<div class="sh"><span class="sh-t">Investment Context</span></div>');
+    html.push('<div class="ic">');
+    html.push('<div class="ic-c"><div class="ic-h">Annual Unrealized Value</div><div class="ic-v">'+F(d.totalUnrealized)+'</div><div class="ic-n">Revenue currently lost to empty slots, no-shows, and leaked referrals across '+(d.prov||'—')+' providers</div></div>');
+    html.push('<div class="ic-c"><div class="ic-h">Tether Year-1 Investment</div><div class="ic-v">'+F(d.tetherCost)+'</div><div class="ic-n">Implementation + annual platform<br>Per provider / month: <b>'+F(Math.round((d.tetherCost||0)/(d.prov||1)/12))+'</b></div></div>');
+    html.push('</div>');
+  }
+
+  html.push('</div>');
+  html.push(ftr('2 / 3'));
+  html.push('</div>');
+
+  // ═══════════════════════════════════════════
+  // PAGE 3 — PROJECTIONS + METHODOLOGY
+  // ═══════════════════════════════════════════
+  html.push('<div class="page">');
+  html.push(hdr());
+  html.push('<div class="content">');
+  html.push('<div class="sp2"></div>');
+
+  // 3-Year Projection
+  if(d.yr&&d.yr.length){
+    var cumI=0,cumC=0;d.yr.forEach(function(y){cumI+=y.impact;cumC+=y.cost});
+    html.push('<div class="sh"><span class="sh-t">Three-Year Financial Projection</span><span class="sh-s">Cumulative net: '+F(cumI-cumC)+'</span></div>');
+    html.push('<table><thead><tr><th></th><th>Year 1</th><th>Year 2</th><th>Year 3</th><th>Cumulative</th></tr></thead><tbody>');
+    html.push('<tr><td class="rl">Projected impact</td>');
+    d.yr.forEach(function(y){html.push('<td class="pos">'+F(y.impact)+'</td>')});
+    html.push('<td class="pos">'+F(cumI)+'</td></tr>');
+    html.push('<tr><td class="rl">Platform investment</td>');
+    d.yr.forEach(function(y){html.push('<td>'+F(y.cost)+'</td>')});
+    html.push('<td>'+F(cumC)+'</td></tr>');
+    html.push('<tr class="rt"><td class="rl">Net value</td>');
+    d.yr.forEach(function(y){html.push('<td class="'+(y.impact-y.cost>0?'pos':'neg')+'">'+F(y.impact-y.cost)+'</td>')});
+    html.push('<td class="pos">'+F(cumI-cumC)+'</td></tr>');
+    html.push('</tbody></table>');
+    html.push('<div class="sp2"></div>');
+  }
+
+  // Per-provider economics
+  if(d.prov&&d.tetherCost){
+    html.push('<div class="sh"><span class="sh-t">Per-Provider Economics</span></div>');
+    html.push('<div class="mg" style="grid-template-columns:1fr 1fr 1fr 1fr">');
+    var ppCost=Math.round((d.tetherCost||0)/(d.prov||1)/12);
+    var ppImpact=Math.round((d.totalImpact||0)/(d.prov||1)/12);
+    var ppNet=ppImpact-ppCost;
+    html.push('<div class="mc"><div class="mv">'+F(ppCost)+'</div><div class="ml">Cost / Provider / Mo</div></div>');
+    html.push('<div class="mc"><div class="mv pos">'+F(ppImpact)+'</div><div class="ml">Impact / Provider / Mo</div></div>');
+    html.push('<div class="mc"><div class="mv pos">'+F(ppNet)+'</div><div class="ml">Net / Provider / Mo</div></div>');
+    html.push('<div class="mc"><div class="mv amb">'+(d.prov||'—')+'</div><div class="ml">Active Providers</div></div>');
+    html.push('</div>');
+    html.push('<div class="sp2"></div>');
+  }
+
+  // Methodology
+  html.push('<div class="sh"><span class="sh-t">Methodology & Assumptions</span></div>');
+  html.push('<div class="meth">');
+  html.push('<b>Data Sources & Model Parameters</b>');
+  html.push('<div class="mg2">');
+  if(d.specLabel){html.push('<div class="mi"><span>Specialty</span><span>'+d.specLabel+'</span></div>')}
+  if(d.revPerVisit){html.push('<div class="mi"><span>Rev / visit</span><span>'+F(d.revPerVisit)+'</span></div>')}
+  if(d.downstream){html.push('<div class="mi"><span>Downstream</span><span>'+d.downstream+'×</span></div>')}
+  if(d.prov){html.push('<div class="mi"><span>Providers</span><span>'+d.prov+'</span></div>')}
+  html.push('<div class="mi"><span>Attribution</span><span>35%</span></div>');
+  html.push('<div class="mi"><span>Recapture rate</span><span>25%</span></div>');
+  html.push('</div>');
+  html.push('<div style="margin-top:10px;font-size:7.5px;color:var(--kg);line-height:1.7">');
+  html.push('Revenue per visit reflects blended reimbursement across payer mix (MGMA 2024). Downstream multiplier from CMS episode-of-care claims analysis. No-show reduction modeled at 50%. Referral recapture at 25% with 35% downstream attribution. All projections are illustrative and should be validated against organizational financial data. Year-over-year escalation: 5% (conservative volume growth + rate adjustment). Platform pricing reflects tiered degressive model.');
+  html.push('</div></div>');
+  html.push('<div class="sp2"></div>');
+
+  // Closing
+  html.push('<div style="padding:20px 24px;border:1px solid var(--bl);border-left:3px solid var(--t)">');
+  html.push('<div style="font-size:9px;font-weight:700;color:var(--kf);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px">Next Steps</div>');
+  html.push('<div style="font-size:11px;color:var(--km);line-height:1.8">');
+  html.push('Schedule a 30-minute access review with a Tether strategist to validate these projections against '+org+'\'s specific operational data. Contact <b>brad.larmie@monolithgrey.com</b>');
+  html.push('</div></div>');
+
+  html.push('</div>');
+  html.push(ftr('3 / 3'));
+  html.push('</div>');
+
+  html.push('</body></html>');
+  w.document.write(html.join("\n"));
   w.document.close();
-  setTimeout(()=>{w.print();},400);
+  setTimeout(function(){w.print()},600);
 }
 
 /* Cross-navigation — keeps them in the tool */
@@ -681,13 +909,17 @@ function ProspectPath({onHome}){
           <Fade delay={900} show={r}>
             <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap",marginBottom:8}}>
               <Btn onClick={function(){exportPDF({
-                title:sp.label+" · "+prov+" Providers — Access Value Analysis",
-                subtitle:"Projected Year-1 impact based on current utilization and Tether improvement modeling.",
+                title:sp.label+" · "+prov+" Providers",
+                orgName:orgName,specLabel:sp.label,prov:prov,
                 date:new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}),
-                metrics:[{v:fmt(netImpact),l:"Net Year-1 Impact",cls:"teal"},{v:Math.round(roiPct)+"%",l:"ROI",cls:"amber"},{v:paybackMo+" mo",l:"Payback"},{v:"+"+fmtK(addlVisits),l:"Patients",cls:"teal"}],
-                narrative:(orgName||sp.label+" network")+" ("+prov+" providers) converts "+fillRate+"% of capacity, leaving "+fmt(totalUnrealized)+" unrealized. Tether recovers "+fmtK(addlVisits)+" visits generating "+fmt(totalTetherImpact)+" against "+fmt(tetherCost)+" investment.",
-                breakdown:[{l:"Visit revenue",v:fmt(addlDirectRev)},{l:"Downstream (35%)",v:fmt(addlDownstream)},{l:"Referral recapture",v:fmt(leakRecovery)},{l:"Total impact",v:fmt(totalTetherImpact)},{l:"Investment",v:"("+fmt(tetherCost)+")"},{l:"Net impact",v:fmt(netImpact)}],
-                methodology:"Rev/visit: "+fmt(sp.revPerVisit)+". Downstream: "+sp.downstream+"x. Tiered pricing."
+                metrics:[{v:fmt(netImpact),l:"Net Year-1 Impact"},{v:Math.round(roiPct)+"%",l:"ROI"},{v:paybackMo+" mo",l:"Payback"},{v:"+"+fmtK(addlVisits),l:"Patients Recovered"}],
+                narrative:(orgName||sp.label+" network")+" ("+prov+" providers) converts "+fillRate+"% of capacity, leaving <span class='hr'>"+fmt(totalUnrealized)+"</span> unrealized. Tether recovers <span class='hl'>"+fmtK(addlVisits)+" visits</span> generating <span class='hl'>"+fmt(totalTetherImpact)+"</span> against <b>"+fmt(tetherCost)+"</b> Year-1 investment — a <span class='hl'>"+Math.round(roiPct)+"%</span> return.",
+                breakdown:[{l:"Direct visit revenue",v:fmt(addlDirectRev)},{l:"Downstream value (35% attribution)",v:fmt(addlDownstream)},{l:"Referral recapture",v:fmt(leakRecovery)},{l:"Total Year-1 impact",v:fmt(totalTetherImpact)},{l:"Platform investment",v:"("+fmt(tetherCost)+")"},{l:"Net Year-1 impact",v:fmt(netImpact)}],
+                fillRate:fillRate,newFillRate:newFillRate,noShow:noShow,newNoShow:newNoShow,
+                leakPct:leakPct,newLeakPct:newLeakPct,targetLift:targetLift,
+                addlDirectRev:addlDirectRev,addlDownstream:addlDownstream,leakRecovery:leakRecovery,
+                totalImpact:totalTetherImpact,tetherCost:tetherCost,totalUnrealized:totalUnrealized,
+                addlVisits:addlVisits,revPerVisit:sp.revPerVisit,downstream:sp.downstream,yr:yr
               })}}>Export Full Analysis</Btn>
               <Btn v="accent" onClick={function(){window.open("mailto:brad.larmie@monolithgrey.com?subject=Tether Access Review Request&body=I'd like to schedule a 30-minute access review consultation.")}}>Schedule Access Review</Btn>
             </div>
@@ -1112,13 +1344,18 @@ function CustomerPath({onHome}){
           </Fade>
           <Fade delay={showExpDetail?300:550} show={r}><div style={{textAlign:"center",marginTop:36}}>
             <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}><Btn onClick={()=>exportPDF({
-              title:`${sp.label} · ${bProv} Providers — Value Realization Report`,
-              subtitle:`${monthsLive} months live. Achieved outcomes and expansion projection.`,
+              title:sp.label+" · "+bProv+" Providers",
+              orgName:orgName,specLabel:sp.label,prov:bProv,
               date:new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}),
-              metrics:[{v:fmt(totalValue),l:"Total Value Delivered",cls:"teal"},{v:`${Math.round(achievedROI)}%`,l:"Achieved ROI",cls:"amber"},{v:`$${perDollar.toFixed(1)}`,l:"Per $1 Invested",cls:"sage"},{v:`+${fmtK(addlVisits)}`,l:"Patients Added",cls:"teal"}],
-              narrative:`Over ${monthsLive} months, Tether improved ${sp.label.toLowerCase()} fill rate from ${bFill}% to ${cFill}% and reduced no-shows from ${bNoShow}% to ${cNoShow}%, adding ${fmtK(addlVisits)} patient visits annually across ${bProv} providers. Total attributable economic impact: ${fmt(totalValue)} per year — a ${Math.round(achievedROI)}% return on ${fmt(tetherCost)}. Every dollar returned $${perDollar.toFixed(1)}.`,
-              breakdown:[{l:"Additional visit revenue",v:fmt(addlRev)},{l:"Downstream value (35% attribution)",v:fmt(addlDownstream)},{l:"Referral recapture",v:fmt(leakRecov)},{l:"Total achieved value",v:fmt(totalValue)},{l:"Platform investment",v:`(${fmt(tetherCost)})`},{l:"Net value",v:fmt(totalValue-tetherCost)}],
-              methodology:`Revenue per visit: ${fmt(rpv)}. Downstream multiplier: ${sp.downstream}×. 35% downstream attribution factor. Value-based pricing: 18% of achieved impact.`
+              metrics:[{v:fmt(totalValue),l:"Total Value Delivered"},{v:Math.round(achievedROI)+"%",l:"Achieved ROI"},{v:"$"+perDollar.toFixed(1),l:"Per $1 Invested"},{v:"+"+fmtK(addlVisits),l:"Patients Added"}],
+              narrative:"Over <b>"+monthsLive+" months</b>, Tether improved "+sp.label.toLowerCase()+" fill rate from <b>"+bFill+"%</b> to <b>"+cFill+"%</b> and reduced no-shows from <b>"+bNoShow+"%</b> to <b>"+cNoShow+"%</b>, adding <span class='hl'>"+fmtK(addlVisits)+" patient visits</span> annually across "+bProv+" providers. Total economic impact: <span class='hl'>"+fmt(totalValue)+"</span> per year — a <b>"+Math.round(achievedROI)+"% return</b> on "+fmt(tetherCost)+". Every dollar returned <span class='hl'>$"+perDollar.toFixed(1)+"</span>.",
+              breakdown:[{l:"Additional visit revenue",v:fmt(addlRev)},{l:"Downstream value (35% attribution)",v:fmt(addlDownstream)},{l:"Referral recapture",v:fmt(leakRecov)},{l:"Total achieved value",v:fmt(totalValue)},{l:"Platform investment",v:"("+fmt(tetherCost)+")"},{l:"Net value",v:fmt(totalValue-tetherCost)}],
+              fillRate:bFill,newFillRate:cFill,noShow:bNoShow,newNoShow:cNoShow,
+              leakPct:bLeak,newLeakPct:cLeak,targetLift:cFill-bFill,
+              addlDirectRev:addlRev,addlDownstream:addlDownstream,leakRecovery:leakRecov,
+              totalImpact:totalValue,tetherCost:tetherCost,totalUnrealized:0,
+              addlVisits:addlVisits,revPerVisit:rpv,downstream:sp.downstream,
+              yr:[{y:1,impact:totalValue,cost:tetherCost},{y:2,impact:totalValue*1.12,cost:Math.round(annualPlatformC*1.05)},{y:3,impact:totalValue*1.24,cost:Math.round(annualPlatformC*1.1)}]
             })}>Download Board Summary</Btn><Btn v="accent">Share with Leadership</Btn></div>
             <div style={{fontSize:11,color:C.kf,marginTop:14}}>PDF with all metrics, comparisons, and expansion projections</div>
           </div></Fade>
@@ -1388,35 +1625,137 @@ function PathCard({p,onClick,ready,i}){
 }
 
 export default function App(){
-  const{mob}=useM();
-  const[splash,setSplash]=useState(true);
-  const[splashPhase,setSplashPhase]=useState(0);
+  const{mob,tab}=useM();
+  const[entered,setEntered]=useState(false);
+  const[coverReady,setCoverReady]=useState(false);
+  const[coverPhase,setCoverPhase]=useState(0);
+  const[leaving,setLeaving]=useState(false);
   const[path,setPath_]=useState(null);const setPath=(p)=>{window.scrollTo(0,0);setPath_(p)};const[ready,setReady]=useState(false);
+  const[email,setEmail]=useState("");
 
   useEffect(()=>{
-    setTimeout(()=>setSplashPhase(1),200);
-    setTimeout(()=>setSplashPhase(2),1200);
-    setTimeout(()=>setSplashPhase(3),3000);
-    setTimeout(()=>{setSplash(false);setTimeout(()=>setReady(true),80)},3400);
+    setTimeout(()=>setCoverPhase(1),100);
+    setTimeout(()=>setCoverPhase(2),600);
+    setTimeout(()=>setCoverPhase(3),1100);
+    setTimeout(()=>setCoverReady(true),1400);
   },[]);
+
+  function handleEnter(){
+    setLeaving(true);
+    setTimeout(()=>{setEntered(true);setTimeout(()=>setReady(true),80)},500);
+  }
 
   useInjectStyles();
 
-  /* ── SPLASH SCREEN ── */
-  if(splash)return(
-    <div style={{minHeight:"100vh",background:"#0F172A",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:bd,
-      transition:"opacity .5s",opacity:splashPhase>=3?0:1}}>
-      <div style={{textAlign:"center"}}>
-        <div style={{opacity:splashPhase>=1?1:0,transform:splashPhase>=1?"scale(1)":"scale(.8)",transition:"all .8s cubic-bezier(.16,1,.3,1)",marginBottom:40}}>
-          <svg width="48" height="48" viewBox="0 0 20 20"><rect width="20" height="20" rx="5" fill="#1E293B"/>
+  /* ── COVER / LOGIN PAGE ── */
+  if(!entered)return(
+    <div style={{minHeight:"100vh",background:"#0F172A",fontFamily:bd,display:"flex",flexDirection:"column",
+      transition:"opacity .5s ease",opacity:leaving?0:1}}>
+
+      {/* Top bar */}
+      <div style={{padding:mob?"20px 24px":"28px 56px",display:"flex",justifyContent:"space-between",alignItems:"center",
+        opacity:coverPhase>=1?1:0,transition:"opacity .6s ease"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <svg width="20" height="20" viewBox="0 0 20 20"><rect width="20" height="20" rx="5" fill="#1E293B"/>
             <path d="M5 8L10 5L15 8L10 11Z" fill="none" stroke={C.t} strokeWidth="1.3" strokeLinejoin="round"/>
             <path d="M5 10.5L10 13.5L15 10.5" fill="none" stroke="#5EC4B6" strokeWidth="1" strokeLinejoin="round" opacity=".4"/></svg>
+          <span style={{fontSize:12,fontWeight:800,letterSpacing:".14em",color:"#F8FAFC"}}>TETHER</span>
         </div>
-        <div style={{opacity:splashPhase>=2?1:0,transform:splashPhase>=2?"translateY(0)":"translateY(16px)",transition:"all .7s cubic-bezier(.16,1,.3,1)"}}>
-          <div style={{fontSize:mob?22:36,fontWeight:400,color:"#F8FAFC",fontFamily:dp,letterSpacing:"-.02em",lineHeight:1.2}}>
+        <div style={{display:"flex",gap:mob?12:20,alignItems:"center"}}>
+          {["HIPAA","SOC 2","HL7 FHIR"].map(b=>(
+            <span key={b} style={{fontSize:7,fontWeight:700,color:"#64748B",letterSpacing:".08em",
+              padding:"3px 8px",border:"1px solid #334155",borderRadius:3}}>{b}</span>))}
+        </div>
+      </div>
+
+      {/* Center content */}
+      <div style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",
+        padding:mob?"0 28px":"0 56px",textAlign:"center",maxWidth:600,margin:"0 auto",width:"100%"}}>
+
+        {/* Logo mark */}
+        <div style={{opacity:coverPhase>=1?1:0,transform:coverPhase>=1?"scale(1)":"scale(.7)",
+          transition:"all .8s cubic-bezier(.16,1,.3,1)",marginBottom:48}}>
+          <svg width={mob?52:64} height={mob?52:64} viewBox="0 0 20 20">
+            <rect width="20" height="20" rx="5" fill="#1E293B"/>
+            <path d="M5 8L10 5L15 8L10 11Z" fill="none" stroke={C.t} strokeWidth="1.3" strokeLinejoin="round"/>
+            <path d="M5 10.5L10 13.5L15 10.5" fill="none" stroke="#5EC4B6" strokeWidth="1" strokeLinejoin="round" opacity=".4"/>
+          </svg>
+        </div>
+
+        {/* Headline */}
+        <div style={{opacity:coverPhase>=2?1:0,transform:coverPhase>=2?"translateY(0)":"translateY(20px)",
+          transition:"all .7s cubic-bezier(.16,1,.3,1)",marginBottom:16}}>
+          <div style={{fontSize:mob?26:42,fontWeight:400,color:"#F8FAFC",fontFamily:dp,letterSpacing:"-.02em",lineHeight:1.15}}>
             What is your patient access<br/>actually worth?
           </div>
         </div>
+
+        {/* Subtext */}
+        <div style={{opacity:coverPhase>=2?1:0,transform:coverPhase>=2?"translateY(0)":"translateY(12px)",
+          transition:"all .7s cubic-bezier(.16,1,.3,1) .1s",marginBottom:mob?40:56}}>
+          <div style={{fontSize:mob?14:16,color:"#94A3B8",lineHeight:1.7,fontWeight:300}}>
+            AI-powered access intelligence for health systems.{mob?" ":<br/>}
+            Quantify unfilled slots, missed appointments, and lost referrals.
+          </div>
+        </div>
+
+        {/* Login card */}
+        <div style={{opacity:coverReady?1:0,transform:coverReady?"translateY(0)":"translateY(16px)",
+          transition:"all .6s cubic-bezier(.16,1,.3,1)",width:"100%",maxWidth:400}}>
+
+          {/* Email input */}
+          <div style={{marginBottom:14}}>
+            <input type="email" value={email} onChange={e=>setEmail(e.target.value)}
+              placeholder="Work email"
+              onKeyDown={e=>{if(e.key==="Enter"&&email)handleEnter()}}
+              style={{width:"100%",padding:mob?"14px 18px":"16px 20px",fontSize:14,fontFamily:bd,
+                background:"#1E293B",border:"1.5px solid #334155",borderRadius:10,color:"#F8FAFC",
+                outline:"none",letterSpacing:".01em",
+                transition:"border-color .2s"}}
+              onFocus={e=>e.target.style.borderColor=C.t}
+              onBlur={e=>e.target.style.borderColor="#334155"}/>
+          </div>
+
+          {/* Sign in button */}
+          <div onClick={()=>{if(email)handleEnter()}}
+            style={{width:"100%",padding:mob?"14px":"16px",textAlign:"center",
+              background:email?C.t:"#334155",borderRadius:10,cursor:email?"pointer":"default",
+              fontSize:14,fontWeight:600,color:email?"#fff":"#64748B",letterSpacing:".02em",
+              transition:"all .25s cubic-bezier(.16,1,.3,1)",
+              opacity:email?1:.6,
+              transform:email?"scale(1)":"scale(.98)"}}>
+            Sign In
+          </div>
+
+          {/* Divider */}
+          <div style={{display:"flex",alignItems:"center",gap:16,margin:"20px 0"}}>
+            <div style={{flex:1,height:1,background:"#334155"}}/>
+            <span style={{fontSize:10,color:"#64748B",fontWeight:500,letterSpacing:".04em"}}>OR</span>
+            <div style={{flex:1,height:1,background:"#334155"}}/>
+          </div>
+
+          {/* Continue as guest */}
+          <div onClick={handleEnter}
+            style={{width:"100%",padding:mob?"14px":"16px",textAlign:"center",
+              background:"transparent",borderRadius:10,cursor:"pointer",
+              fontSize:14,fontWeight:500,color:"#94A3B8",letterSpacing:".02em",
+              border:"1.5px solid #334155",
+              transition:"all .2s cubic-bezier(.16,1,.3,1)"}}>
+            Continue as Guest
+          </div>
+
+          <div style={{marginTop:20,fontSize:11,color:"#475569",lineHeight:1.6}}>
+            Sign in for saved analyses and team sharing.{mob?"":<br/>} Guest access includes full calculator with export.
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom bar */}
+      <div style={{padding:mob?"16px 24px":"20px 56px",display:"flex",justifyContent:"space-between",alignItems:"center",
+        borderTop:"1px solid #1E293B",flexWrap:"wrap",gap:8,
+        opacity:coverPhase>=3?1:0,transition:"opacity .6s ease"}}>
+        <span style={{fontSize:8,fontWeight:700,color:"#475569",letterSpacing:".12em"}}>BUILT BY BRAD LARMIE</span>
+        <span style={{fontSize:8,fontWeight:700,color:"#475569",letterSpacing:".08em"}}>MONOLITH GREY · VALUE ENGINEERING</span>
       </div>
     </div>
   );
