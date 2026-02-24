@@ -14,11 +14,14 @@ function useM(){
 
 /* Global responsive CSS injection */
 const RCSS=`
+html,body{overflow-x:hidden;max-width:100vw}
 input[type=range]{-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer}
 input[type=range]::-webkit-slider-runnable-track{height:44px;background:transparent}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:44px;height:44px;background:transparent;cursor:pointer}
 input[type=range]::-moz-range-track{height:44px;background:transparent}
 input[type=range]::-moz-range-thumb{width:44px;height:44px;background:transparent;border:none;cursor:pointer}
+*{-webkit-tap-highlight-color:transparent}
+select{-webkit-appearance:none;appearance:none}
 `;
 
 const C={
@@ -184,11 +187,11 @@ function NavFoot({step,max,onBack,onNext,nextLabel,nextDisabled}){const{mob}=use
     {step<max?<Btn onClick={onNext} disabled={nextDisabled}>{nextLabel||"Continue"}</Btn>:null}
   </div>)}
 
-function Stat({label,value,sub,color=C.k,bg=C.sf,border=C.b}){return(
-  <div style={{padding:"24px 20px",background:bg,border:`1px solid ${border}`,borderRadius:12,boxShadow:sh1}}>
-    <div style={{fontSize:10,fontWeight:700,color:bg===C.sf?C.kf:color,letterSpacing:".1em",textTransform:"uppercase",fontFamily:bd,marginBottom:14}}>{label}</div>
-    <div style={{fontSize:32,fontWeight:500,color,fontFamily:mn,letterSpacing:"-.04em",lineHeight:1}}>{value}</div>
-    {sub&&<div style={{fontSize:11,color:C.kf,marginTop:10,fontFamily:bd}}>{sub}</div>}
+function Stat({label,value,sub,color=C.k,bg=C.sf,border=C.b}){const{mob}=useM();return(
+  <div style={{padding:mob?"18px 16px":"24px 20px",background:bg,border:`1px solid ${border}`,borderRadius:12,boxShadow:sh1}}>
+    <div style={{fontSize:mob?9:10,fontWeight:700,color:bg===C.sf?C.kf:color,letterSpacing:".1em",textTransform:"uppercase",fontFamily:bd,marginBottom:mob?10:14}}>{label}</div>
+    <div style={{fontSize:mob?22:32,fontWeight:500,color,fontFamily:mn,letterSpacing:"-.04em",lineHeight:1}}>{value}</div>
+    {sub&&<div style={{fontSize:mob?10:11,color:C.kf,marginTop:mob?8:10,fontFamily:bd}}>{sub}</div>}
   </div>)}
 
 /* Source tooltip — hover to see data source */
@@ -627,10 +630,10 @@ function ProspectPath({onHome}){
           <Fade delay={150} show={r}>
             <div style={{padding:mob?"20px 18px":"24px 28px",background:C.sf,borderRadius:12,border:"1px solid "+sp.color+"25",boxShadow:sh1}}>
               <div style={{fontSize:10,fontWeight:700,color:sp.color,letterSpacing:".12em",marginBottom:14}}>{sp.label.toUpperCase()} ECONOMICS</div>
-              <div style={{display:"flex",gap:mob?16:40,flexWrap:"wrap"}}>
+              <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr 1fr",gap:mob?16:40}}>
                 {[{l:"Revenue / visit",v:fmt(sp.revPerVisit),c:sp.color,tip:"MGMA 2024"},{l:"Downstream multiplier",v:sp.downstream+"\u00d7",c:C.a,tip:"CMS claims 2023"},{l:"National median util.",v:sp.benchUtil+"%",c:C.k,tip:"MGMA 2024"}].map(function(x){return(
-                  <div key={x.l} style={{minWidth:mob?80:0}}>
-                    <div style={{fontSize:mob?20:28,fontWeight:500,color:x.c,fontFamily:mn,letterSpacing:"-.03em"}}>{x.v}</div>
+                  <div key={x.l}>
+                    <div style={{fontSize:mob?22:28,fontWeight:500,color:x.c,fontFamily:mn,letterSpacing:"-.03em"}}>{x.v}</div>
                     <div style={{fontSize:10,color:C.kf,fontWeight:600,marginTop:4}}>{x.l} <Src tip={x.tip}/></div></div>)})}
               </div>
               <div style={{marginTop:16,fontSize:13,color:C.ks,lineHeight:1.7}}>
@@ -680,14 +683,14 @@ function ProspectPath({onHome}){
           </Card>
 
           <Fade delay={200} show={r}>
-            <div style={{display:"grid",gridTemplateColumns:mob?"1fr 1fr":"1fr 1fr 1fr",gap:mob?10:16}}>
+            <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr 1fr",gap:mob?10:16}}>
               {[{l:"REALIZED",v:actualVisits*sp.revPerVisit+actualVisits*sp.revPerVisit*(sp.downstream-1),s:`${fmtK(actualVisits)} visits`,bg:C.tb,bc:C.tc,fc:C.t},
                 {l:"UNREALIZED",v:totalUnrealized,s:`${fmtK(unrealizedSlots)} empty slots`,bg:C.rb,bc:C.rc,fc:C.r},
                 {l:"LEAKED",v:leakageLoss,s:`${fmtK(leakedReferrals)} referrals`,bg:C.ab,bc:C.ac,fc:C.a}].map(x=>(
-                <div key={x.l} style={{padding:24,background:x.bg,borderRadius:14,border:`1px solid ${x.bc}`,textAlign:"center"}}>
-                  <div style={{fontSize:9,fontWeight:700,color:x.fc,letterSpacing:".1em",marginBottom:10}}>{x.l}</div>
-                  <div style={{fontSize:26,fontWeight:500,color:x.fc,fontFamily:mn}}>{fmt(x.v)}</div>
-                  <div style={{fontSize:11,color:C.kf,marginTop:6}}>{x.s}</div>
+                <div key={x.l} style={{padding:mob?16:24,background:x.bg,borderRadius:14,border:`1px solid ${x.bc}`,textAlign:"center"}}>
+                  <div style={{fontSize:9,fontWeight:700,color:x.fc,letterSpacing:".1em",marginBottom:mob?6:10}}>{x.l}</div>
+                  <div style={{fontSize:mob?20:26,fontWeight:500,color:x.fc,fontFamily:mn}}>{fmt(x.v)}</div>
+                  <div style={{fontSize:mob?10:11,color:C.kf,marginTop:mob?4:6}}>{x.s}</div>
                 </div>))}
             </div>
           </Fade>
@@ -856,7 +859,7 @@ function ProspectPath({onHome}){
                 <div style={{fontSize:10,fontWeight:700,color:C.kf,letterSpacing:".12em"}}>YEAR-1 TOTAL</div>
                 <div style={{fontSize:mob?32:44,fontWeight:500,color:C.tc,fontFamily:mn,letterSpacing:"-.04em"}}>{fmt(tetherCost)}</div>
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:0,borderTop:`1px solid ${C.km}`,paddingTop:16}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:mob?4:0,borderTop:`1px solid ${C.km}`,paddingTop:16}}>
                 {[{l:"Implementation",v:fmt(implCost)},{l:"Annual Platform",v:fmt(annualPlatform)},{l:"Per Provider / Mo",v:fmt(Math.round(annualPlatform/prov/12))}].map(x=>(
                   <div key={x.l} style={{textAlign:"center"}}>
                     <div style={{fontSize:mob?14:18,fontWeight:500,color:"#fff",fontFamily:mn}}>{x.v}</div>
@@ -933,19 +936,19 @@ function ProspectPath({onHome}){
                 <span style={{fontSize:10,color:C.kf,fontFamily:mn}}>{showDetail?"\u2212":"+"}</span></div>
               {showDetail&&<Fade show={showDetail}><Card mb={8} pad={mob?"16px 14px":"20px 24px"}>
                 <div style={{borderRadius:10,overflow:"hidden",border:"1px solid "+C.bl}}>
-                  <div style={{display:"grid",gridTemplateColumns:mob?".5fr 1fr 1fr 1fr":".7fr 1fr 1fr 1fr"}}>
-                    {["","Impact","Cost","Net"].map(function(h,i){return <div key={i} style={{padding:mob?"10px 10px":"12px 16px",background:C.sa,fontSize:10,fontWeight:700,color:C.kf,letterSpacing:".06em",textAlign:i?"right":"left"}}>{h}</div>})}</div>
-                  {yr.map(function(y,yi){return <div key={yi} style={{display:"grid",gridTemplateColumns:mob?".5fr 1fr 1fr 1fr":".7fr 1fr 1fr 1fr",borderTop:"1px solid "+C.bl}}>
-                    <div style={{padding:mob?"10px 10px":"12px 16px",fontSize:mob?12:13,fontWeight:600,color:C.k}}>{"Year "+y.y}</div>
-                    <div style={{padding:mob?"10px 10px":"12px 16px",fontSize:mob?12:13,fontFamily:mn,fontWeight:500,color:C.km,textAlign:"right"}}>{fmt(y.impact)}</div>
-                    <div style={{padding:mob?"10px 10px":"12px 16px",fontSize:mob?12:13,fontFamily:mn,fontWeight:500,color:C.km,textAlign:"right"}}>{fmt(y.cost)}</div>
-                    <div style={{padding:mob?"10px 10px":"12px 16px",fontSize:mob?12:13,fontFamily:mn,fontWeight:500,color:y.impact-y.cost>0?C.t:C.r,textAlign:"right"}}>{fmt(y.impact-y.cost)}</div>
+                  <div style={{display:"grid",gridTemplateColumns:mob?".4fr 1fr 1fr 1fr":".7fr 1fr 1fr 1fr"}}>
+                    {["","Impact","Cost","Net"].map(function(h,i){return <div key={i} style={{padding:mob?"8px 6px":"12px 16px",background:C.sa,fontSize:mob?8:10,fontWeight:700,color:C.kf,letterSpacing:".06em",textAlign:i?"right":"left"}}>{h}</div>})}</div>
+                  {yr.map(function(y,yi){return <div key={yi} style={{display:"grid",gridTemplateColumns:mob?".4fr 1fr 1fr 1fr":".7fr 1fr 1fr 1fr",borderTop:"1px solid "+C.bl}}>
+                    <div style={{padding:mob?"8px 6px":"12px 16px",fontSize:mob?11:13,fontWeight:600,color:C.k}}>{"Yr "+y.y}</div>
+                    <div style={{padding:mob?"8px 6px":"12px 16px",fontSize:mob?11:13,fontFamily:mn,fontWeight:500,color:C.km,textAlign:"right"}}>{fmt(y.impact)}</div>
+                    <div style={{padding:mob?"8px 6px":"12px 16px",fontSize:mob?11:13,fontFamily:mn,fontWeight:500,color:C.km,textAlign:"right"}}>{fmt(y.cost)}</div>
+                    <div style={{padding:mob?"8px 6px":"12px 16px",fontSize:mob?11:13,fontFamily:mn,fontWeight:500,color:y.impact-y.cost>0?C.t:C.r,textAlign:"right"}}>{fmt(y.impact-y.cost)}</div>
                   </div>})}
-                  <div style={{display:"grid",gridTemplateColumns:mob?".5fr 1fr 1fr 1fr":".7fr 1fr 1fr 1fr",borderTop:"2px solid "+C.bd}}>
-                    <div style={{padding:mob?"10px 10px":"12px 16px",fontSize:mob?12:13,fontWeight:700,color:C.k,background:C.sh}}>3-Year</div>
-                    <div style={{padding:mob?"10px 10px":"12px 16px",background:C.sh}}></div>
-                    <div style={{padding:mob?"10px 10px":"12px 16px",background:C.sh}}></div>
-                    <div style={{padding:mob?"10px 10px":"12px 16px",fontSize:mob?12:13,fontFamily:mn,fontWeight:700,color:C.t,textAlign:"right",background:C.sh}}>{fmt(yr.reduce(function(a,b){return a+(b.impact-b.cost)},0))}</div>
+                  <div style={{display:"grid",gridTemplateColumns:mob?".4fr 1fr 1fr 1fr":".7fr 1fr 1fr 1fr",borderTop:"2px solid "+C.bd}}>
+                    <div style={{padding:mob?"8px 6px":"12px 16px",fontSize:mob?11:13,fontWeight:700,color:C.k,background:C.sh}}>Total</div>
+                    <div style={{padding:mob?"8px 6px":"12px 16px",background:C.sh}}></div>
+                    <div style={{padding:mob?"8px 6px":"12px 16px",background:C.sh}}></div>
+                    <div style={{padding:mob?"8px 6px":"12px 16px",fontSize:mob?11:13,fontFamily:mn,fontWeight:700,color:C.t,textAlign:"right",background:C.sh}}>{fmt(yr.reduce(function(a,b){return a+(b.impact-b.cost)},0))}</div>
                   </div>
                 </div></Card></Fade>}
 
@@ -1046,11 +1049,11 @@ function CustomerPath({onHome}){
 
           {/* Org config */}
           <Card shadow={2} mb={28} pad={mob?"20px 18px":"28px 36px"}>
-            <div style={{display:"flex",alignItems:"center",gap:mob?16:32,flexWrap:"wrap"}}>
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{display:mob?"grid":"flex",gridTemplateColumns:mob?"1fr 1fr":"none",alignItems:"center",gap:mob?16:32,flexWrap:"wrap"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,gridColumn:mob?"span 2":"auto"}}>
                 <span style={{fontSize:10,fontWeight:700,color:C.kf,letterSpacing:".08em"}}>SPECIALTY</span>
                 <select value={spec} onChange={e=>setSpec(e.target.value)}
-                  style={{padding:"8px 16px",borderRadius:8,border:`1.5px solid ${C.b}`,background:C.sf,fontSize:12,fontFamily:bd,color:C.k,cursor:"pointer",outline:"none"}}>
+                  style={{padding:"8px 16px",borderRadius:8,border:`1.5px solid ${C.b}`,background:C.sf,fontSize:12,fontFamily:bd,color:C.k,cursor:"pointer",outline:"none",flex:mob?1:"none"}}>
                   {Object.entries(SPECS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
                 </select>
               </div>
@@ -1059,10 +1062,10 @@ function CustomerPath({onHome}){
                 {l:"REV/VISIT",v:rpv,set:setBRevPerVisit,min:100,max:800,step:5,fmt:true}
               ].map(x=>(
                 <div key={x.l} style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:10,fontWeight:700,color:C.kf,letterSpacing:".08em"}}>{x.l}</span>
-                  <div style={{position:"relative",display:"flex",alignItems:"center"}}>
-                    <span style={{fontSize:18,fontWeight:600,color:C.k,fontFamily:mn,minWidth:x.fmt?52:32,textAlign:"right"}}>{x.fmt?fmt(x.v):x.v}</span>
-                    <div style={{width:mob?56:72,height:28,position:"relative",marginLeft:8,display:"flex",alignItems:"center"}}>
+                  <span style={{fontSize:mob?9:10,fontWeight:700,color:C.kf,letterSpacing:".08em",whiteSpace:"nowrap"}}>{x.l}</span>
+                  <div style={{position:"relative",display:"flex",alignItems:"center",flex:1}}>
+                    <span style={{fontSize:mob?16:18,fontWeight:600,color:C.k,fontFamily:mn,minWidth:x.fmt?52:32,textAlign:"right"}}>{x.fmt?fmt(x.v):x.v}</span>
+                    <div style={{width:mob?52:72,height:28,position:"relative",marginLeft:8,display:"flex",alignItems:"center"}}>
                       <div style={{position:"absolute",left:0,right:0,height:3,background:C.bl,borderRadius:2}}/>
                       <div style={{position:"absolute",left:0,width:`${((x.v-x.min)/(x.max-x.min))*100}%`,height:3,background:C.t,borderRadius:2}}/>
                       <input type="range" min={x.min} max={x.max} step={x.step} value={x.v} onChange={e=>x.set(+e.target.value)}
@@ -1120,12 +1123,12 @@ function CustomerPath({onHome}){
                   </div>;})}
               </div>
             </div>
-            <div style={{padding:mob?"14px 16px":"18px 32px",borderTop:`1px solid ${C.bl}`,background:C.sa,display:"flex",justifyContent:"space-between",alignItems:"center",
-              borderRadius:"0 0 12px 12px"}}>
-              <span style={{fontSize:13,color:C.ks}}>
+            <div style={{padding:mob?"12px 16px":"18px 32px",borderTop:`1px solid ${C.bl}`,background:C.sa,display:"flex",justifyContent:"space-between",alignItems:"center",
+              borderRadius:"0 0 12px 12px",flexWrap:"wrap",gap:mob?4:0}}>
+              <span style={{fontSize:mob?11:13,color:C.ks}}>
                 <strong style={{color:C.k}}>{fmtK(bActual)}</strong> → <strong style={{color:C.t}}>{fmtK(cActual)}</strong> patients/yr
                 <span style={{color:C.t,fontWeight:700,fontFamily:mn,marginLeft:8}}>+{fmtK(addlVisits)}</span></span>
-              <span style={{fontSize:13,color:C.ks}}>Projected value: <strong style={{color:C.t,fontFamily:mn}}>{fmt(totalValue)}</strong></span>
+              <span style={{fontSize:mob?11:13,color:C.ks}}>Projected value: <strong style={{color:C.t,fontFamily:mn}}>{fmt(totalValue)}</strong></span>
             </div>
           </Card>
         </Fade>}
@@ -1226,7 +1229,7 @@ function CustomerPath({onHome}){
                 <div style={{fontSize:10,fontWeight:700,color:C.kf,letterSpacing:".12em"}}>TOTAL INVESTMENT</div>
                 <div style={{fontSize:mob?32:44,fontWeight:500,color:C.tc,fontFamily:mn,letterSpacing:"-.04em"}}>{fmt(tetherCost)}</div>
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:0,borderTop:`1px solid ${C.km}`,paddingTop:16}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:mob?4:0,borderTop:`1px solid ${C.km}`,paddingTop:16}}>
                 {[{l:"Implementation",v:fmt(implCostC)},{l:"Annual Platform",v:fmt(annualPlatformC)},{l:"Per Provider / Mo",v:fmt(Math.round(annualPlatformC/bProv/12))}].map(x=>(
                   <div key={x.l} style={{textAlign:"center"}}>
                     <div style={{fontSize:mob?14:18,fontWeight:500,color:"#fff",fontFamily:mn}}>{x.v}</div>
@@ -1460,11 +1463,11 @@ function CaseStudyPath({onHome}){
 
         {/* Hero stats — centered dramatic numbers */}
         <div style={{textAlign:"center",padding:"8px 0 48px"}}>
-          <div style={{display:"flex",justifyContent:"center",gap:mob?20:56}}>
+          <div style={{display:"grid",gridTemplateColumns:mob?"1fr 1fr":"1fr 1fr 1fr 1fr",justifyContent:"center",gap:mob?16:56}}>
             {[{v:"442",l:"Total Providers",c:C.t},{v:"$14.8M",l:"Revenue Recovered",c:C.t},{v:"56,400",l:"Patients Added / Year",c:C.s},{v:"313%",l:"Average ROI",c:C.a}].map(x=>(
               <div key={x.l} style={{textAlign:"center"}}>
-                <div style={{fontSize:mob?20:32,fontWeight:500,color:x.c,fontFamily:mn,letterSpacing:"-.03em"}}>{x.v}</div>
-                <div style={{fontSize:9,fontWeight:700,color:C.kf,letterSpacing:".1em",marginTop:6}}>{x.l.toUpperCase()}</div>
+                <div style={{fontSize:mob?22:32,fontWeight:500,color:x.c,fontFamily:mn,letterSpacing:"-.03em"}}>{x.v}</div>
+                <div style={{fontSize:mob?8:9,fontWeight:700,color:C.kf,letterSpacing:".1em",marginTop:6}}>{x.l.toUpperCase()}</div>
               </div>))}
           </div>
         </div>
